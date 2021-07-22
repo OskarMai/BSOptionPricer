@@ -1,0 +1,32 @@
+Design:
+I created an abstract base class called Option inside namespace omai::Options. This abstract base class contains the T,K,sig,r,b,otype variables
+that are common to most options(For Perpetual American Options, you simply ignore the initialized T value). Then I created two derived classes,
+PerpetualAmericanOption and EuroOption. The Option data member otype is used to differentiate between calls and puts. The base class has several
+pure virtual member functions that need to be implemented in the base class, Price(), Delta(), Gamma(). The point of making it a pure virtual member
+function is that some derived classes will implement these functions differently. The formulas were incorporated into functions to calculate 
+the correct price, etc. The decision behind this design is to make it easier to add more option classes in the future. We do not want to create
+the same data members for each option class. Furthermore, the Mesh() and Matrix() functions are global and take in parameters we set. The flexibility
+behind Mesh() and Matrix() is that they take in a function as one of its args. This function is then applied on the monotonically increasing set of 
+numbers, meaning I can input Price and get a Mesh of price values. Matrix follows the same principle.
+
+Problems:
+I have not found a way to reliably integrate classes as a parameter into Matrix(), so the current way for Matrix() to know which Option class
+it is dealing with is through a double arg, 0=Euro and 1=American. The problem with this design is that it is not very scalable, but it does not 
+need to be. Even if we need to incorporate tens of option classes into Matrix(), we can simply add if statements for each option class and hard code it.
+We do not need to add hundreds of different option classes, so hardcoding it is acceptable. One benefit from doing it this way is that I do not
+have to check a conditional for every iteration in my for loop. For large data sets, checking this conditional will drastically slow down the function.
+Doing it through hardcoding means there is a set amount of overhead, one if statement per option class. Perhaps I could improve upon
+this global function by integrating classes as function args. Originally, I believed that generic programming couldn't be used to solve my problem because
+generic programming is taking in a generic type to use as a return type or input argument type. Then I wondered if this is really the case. If templates 
+were limited in such a way then the utility of Generic Programming would be heavily restricted. I tried changing Matrix() into a template and using whatever
+inputted option type inside my for loop and not as a return type or input parameter for the function and it worked. This current approach is the most flexible 
+and efficient method I could come up with. There is no increased overhead for the number of option types or for each iteration inside our for loop. 
+
+Files:
+Matrix.h - Matrix global function
+Mesh.h - Mesh global function
+Forwarder.h - Contains global functions that take an option obj and return their corresponding Price/Delta/Gamma function. An intermediary for Mesh() to access
+	Option Objects' member functions.
+Option.h/cpp - Abstract base class 
+EuroOption.h/cpp - Derived Class for Group A
+PerpetualAmericanOption.h/cpp - Derived class for Group B
